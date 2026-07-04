@@ -8,6 +8,9 @@ import numpy as np
 from unittest.mock import Mock, patch, MagicMock
 from typing import List
 
+# 可选导入torch
+torch = pytest.importorskip("torch", reason="torch未安装，跳过VLM测试")
+
 # 导入被测试的模块
 from easymocap.vlm.service import (
     VLMService,

@@ -8,6 +8,9 @@ import time
 import numpy as np
 from unittest.mock import Mock, patch
 
+# 可选导入torch
+torch = pytest.importorskip("torch", reason="torch未安装，跳过性能测试")
+
 # 导入被测试的模块
 from easymocap.performance.optimizer import (
     PerformanceOptimizer,
