@@ -75,3 +75,11 @@ spconv>=2.3.0  # ✅ 升级：支持spconv v2
 # flake8>=6.1.0
 # mypy>=1.5.0
 # isort>=5.12.0
+
+# ==================== 可观测性 ====================
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-instrumentation-fastapi>=0.41b0
+opentelemetry-instrumentation-sqlalchemy>=0.41b0
+opentelemetry-instrumentation-redis>=0.41b0
+opentelemetry-exporter-otlp>=1.20.0

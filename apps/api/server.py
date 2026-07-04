@@ -244,3 +244,148 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ==================== 认证和授权 ====================
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from datetime import datetime, timedelta
+
+# 安全配置
+security = HTTPBearer()
+
+# JWT配置
+SECRET_KEY = ***'SECRET_KEY', 'your-secret-key-change-in-production')
+JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
+JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
+
+
+def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+    """
+    创建JWT访问令牌
+    
+    Args:
+        data: 令牌数据
+        expires_delta: 过期时间增量
+    
+    Returns:
+        JWT令牌字符串
+    """
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """
+    验证JWT令牌
+    
+    Args:
+        credentials: HTTP认证凭据
+    
+    Returns:
+        令牌载荷
+    
+    Raises:
+        HTTPException: 令牌无效或过期
+    """
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            SECRET_KEY,
+            algorithms=[JWT_ALGORITHM]
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="令牌已过期"
+        )
+    except jwt.JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的令牌"
+        )
+
+
+# 受保护的路由示例
+@app.get("/api/v1/protected", tags=["认证"])
+async def protected_route(current_user: dict = Depends(verify_token)):
+    """
+    受保护的路由示例
+    
+    需要有效的JWT令牌才能访问
+    """
+    return {
+        "message": "访问成功",
+        "user": current_user
+    }
+
+
+@app.post("/api/v1/auth/login", tags=["认证"])
+async def login(username: str, password: str):
+    """
+    用户登录
+    
+    - **username**: 用户名
+    - **password**: 密码
+    
+    返回JWT访问令牌
+    """
+    # TODO: 实际的用户验证逻辑
+    # 这里只是示例，实际应该查询数据库
+    
+    if username == "admin" and password == "admin":
+        access_token = create_access_token(
+            data={"sub": username, "role": "admin"}
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": JWT_EXPIRATION_HOURS * 3600
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误"
+        )
+
+
+# ==================== 安全中间件 ====================
+
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+
+# 安全配置
+SECURE_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": "default-src 'self'",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+}
+
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """添加安全响应头"""
+    response = await call_next(request)
+    for header, value in SECURE_HEADERS.items():
+        response.headers[header] = value
+    return response
+
+
+# 生产环境启用HTTPS重定向
+# app.add_middleware(HTTPSRedirectMiddleware)
+
+# 受信任的主机
+# app.add_middleware(TrustedHostMiddleware, allowed_hosts=["yourdomain.com"])
