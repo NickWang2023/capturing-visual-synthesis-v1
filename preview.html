@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大模型支持下的动作捕捉与视觉合成系统 V1.0 - 预览效果图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 50%, #2d1b4e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        /* 头部区域 */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 1s ease;
+        }
+        
+        .header .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 42px;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+        
+        .header .subtitle {
+            font-size: 20px;
+            color: #8e8ea0;
+            margin-bottom: 30px;
+        }
+        
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .badge-python { background: linear-gradient(90deg, #3776ab, #ffd43b); color: #000; }
+        .badge-pytorch { background: linear-gradient(90deg, #ee4c2c, #ff6b35); color: #fff; }
+        .badge-cuda { background: linear-gradient(90deg, #76b900, #00a8e8); color: #000; }
+        .badge-llm { background: linear-gradient(90deg, #7b68ee, #ff6b9d); color: #fff; }
+        
+        /* 核心能力卡片 */
+        .section-title {
+            font-size: 32px;
+            text-align: center;
+            margin: 50px 0 40px;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            border-radius: 2px;
+        }
+        
+        .capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .capability-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 35px;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .capability-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(123, 104, 238, 0.5);
+            box-shadow: 0 20px 60px rgba(123, 104, 238, 0.3);
+        }
+        
+        .capability-card .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .capability-card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+        
+        .capability-card p {
+            color: #8e8ea0;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        
+        /* 系统架构图 */
+        .architecture-section {
+            margin: 60px 0;
+        }
+        
+        .arch-diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .arch-layer {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .arch-layer:hover {
+            transform: scale(1.02);
+        }
+        
+        .layer-label {
+            min-width: 160px;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .layer-content {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        
+        .layer-box {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .layer-box:hover {
+            transform: scale(1.05);
+        }
+        
+        .layer-client { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .layer-gateway { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .layer-app { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #000; }
+        .layer-ai { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #000; }
+        .layer-data { background: linear-gradient(135deg, #fa709a, #fee140); color: #000; }
+        
+        /* 大模型能力矩阵 */
+        .llm-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .llm-matrix {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .llm-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .llm-card:hover {
+            border-color: rgba(123, 104, 238, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .llm-card h4 {
+            color: #7b68ee;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .llm-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .llm-card li {
+            color: #8e8ea0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .llm-card li:last-child {
+            border-bottom: none;
+        }
+        
+        .tech-tag {
+            background: rgba(123, 104, 238, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #7b68ee;
+        }
+        
+        /* 功能演示区 */
+        .demo-section {
+            margin: 60px 0;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+        }
+        
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .demo-preview {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            background: linear-gradient(135deg, rgba(123, 104, 238, 0.2), rgba(0, 212, 255, 0.2));
+        }
+        
+        .demo-info {
+            padding: 25px;
+        }
+        
+        .demo-info h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: #00d4ff;
+        }
+        
+        .demo-info p {
+            color: #8e8ea0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        /* 技术栈表格 */
+        .tech-table-container {
+            margin: 40px 0;
+            overflow-x: auto;
+        }
+        
+        .tech-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .tech-table th {
+            background: rgba(123, 104, 238, 0.3);
+            padding: 18px 20px;
+            text-align: left;
+            font-size: 15px;
+            color: #fff;
+        }
+        
+        .tech-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            color: #8e8ea0;
+        }
+        
+        .tech-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .tech-table .version {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+        
+        /* 处理流程图 */
+        .flow-section {
+            margin: 60px 0;
+        }
+        
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .flow-step {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 25px 30px;
+            text-align: center;
+            min-width: 150px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .flow-step:hover {
+            background: rgba(123, 104, 238, 0.2);
+            border-color: #7b68ee;
+            transform: scale(1.05);
+        }
+        
+        .flow-step .step-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        
+        .flow-step .step-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .flow-arrow {
+            font-size: 28px;
+            color: #7b68ee;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        /* 性能指标 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            border-color: rgba(0, 212, 255, 0.5);
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 42px;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #8e8ea0;
+        }
+        
+        /* 动画 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-in {
+            animation: fadeInUp 0.8s ease forwards;
+            opacity: 0;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        .delay-4 { animation-delay: 0.8s; }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding: 40px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #8e8ea0;
+        }
+        
+        .footer .company {
+            font-size: 24px;
+            font-weight: 700;
+            color: #7b68ee;
+            margin-bottom: 10px;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .flow-container {
+                flex-direction: column;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">🎬</div>
+            <h1>大模型支持下的动作捕捉与视觉合成系统</h1>
+            <p class="subtitle">V1.0 - 从视频输入到3D动画输出的全流程智能化解决方案</p>
+            <div class="badge-container">
+                <span class="badge badge-python">Python 3.10</span>
+                <span class="badge badge-pytorch">PyTorch 2.1</span>
+                <span class="badge badge-cuda">CUDA 12.1</span>
+                <span class="badge badge-llm">GPT-4/Claude</span>
+            </div>
+        </header>
+        
+        <!-- 核心能力 -->
+        <h2 class="section-title">🚀 核心能力</h2>
+        <div class="capabilities-grid">
+            <div class="capability-card animate-in delay-1">
+                <div class="icon">🤖</div>
+                <h3>智能算力调度</h3>
+                <p>大模型自动优化GPU资源分配，算力利用率提升40%，处理成本降低30%</p>
+            </div>
+            <div class="capability-card animate-in delay-2">
+                <div class="icon">🎯</div>
+                <h3>AI增强处理</h3>
+                <p>视觉大模型提升姿态估计精度，姿态精度从85%提升至95%</p>
+            </div>
+            <div class="capability-card animate-in delay-3">
+                <div class="icon">💬</div>
+                <h3>智能交互</h3>
+                <p>自然语言操作，降低使用门槛，零门槛使用专业级动作捕捉</p>
+            </div>
+            <div class="capability-card animate-in delay-4">
+                <div class="icon">⚡</div>
+                <h3>自动优化</h3>
+                <p>大模型自动生成参数、修复错误，效率提升10倍</p>
+            </div>
+            <div class="capability-card animate-in delay-1">
+                <div class="icon">🎥</div>
+                <h3>视觉合成</h3>
+                <p>大模型驱动的新视角视频生成，基于Neural Body技术</p>
+            </div>
+            <div class="capability-card animate-in delay-2">
+                <div class="icon">💰</div>
+                <h3>低成本</h3>
+                <p>智能调度降低30%算力成本，AI加速处理流程</p>
+            </div>
+        </div>
+        
+        <!-- 系统架构 -->
+        <h2 class="section-title">🏗️ 系统架构</h2>
+        <div class="arch-diagram">
+            <div class="arch-layer" style="background: rgba(102, 126, 234, 0.2);">
+                <div class="layer-label">🖥️ 客户端层</div>
+                <div class="layer-content">
+                    <div class="layer-box layer-client">PC浏览器 (Vue)</div>
+                    <div class="layer-box layer-client">移动端 (H5)</div>
+                    <div class="layer-box layer-client">平板 (Web)</div>
+                    <div class="layer-box layer-client">数据大屏</div>
+                </div>
+            </div>
+            
+            <div class="arch-layer" style="background: rgba(240, 147, 251, 0.2);">
+                <div class="layer-label">🤖 大模型网关层</div>
+                <div class="layer-content">
+                    <div class="layer-box layer-gateway">请求路由</div>
+                    <div class="layer-box layer-gateway">负载均衡</div>
+                    <div class="layer-box layer-gateway">缓存优化</div>
+                    <div class="layer-box layer-gateway">成本控制</div>
+                </div>
+            </div>
+            
+            <div class="arch-layer" style="background: rgba(79, 172, 254, 0.2);">
+                <div class="layer-label">⚙️ 应用服务层</div>
+                <div class="layer-content">
+                    <div class="layer-box layer-app">AI调度服务</div>
+                    <div class="layer-box layer-app">捕捉服务</div>
+                    <div class="layer-box layer-app">合成服务</div>
+                    <div class="layer-box layer-app">交互服务</div>
+                </div>
+            </div>
+            
+            <div class="arch-layer" style="background: rgba(67, 233, 123, 0.2);">
+                <div class="layer-label">🧠 AI计算层</div>
+                <div class="layer-content">
+                    <div class="layer-box layer-ai">LLM推理</div>
+                    <div class="layer-box layer-ai">VLM处理</div>
+                    <div class="layer-box layer-ai">AIGC生成</div>
+                    <div class="layer-box layer-ai">传统CV</div>
+                </div>
+            </div>
+            
+            <div class="arch-layer" style="background: rgba(250, 112, 154, 0.2);">
+                <div class="layer-label">🗄️ 数据层</div>
+                <div class="layer-content">
+                    <div class="layer-box layer-data">MySQL</div>
+                    <div class="layer-box layer-data">Redis</div>
+                    <div class="layer-box layer-data">Vector DB</div>
+                    <div class="layer-box layer-data">OSS存储</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 处理流程 -->
+        <h2 class="section-title">📊 处理流程</h2>
+        <div class="flow-container">
+            <div class="flow-step">
+                <div class="step-icon">📹</div>
+                <div class="step-name">视频输入</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <div class="step-icon">🤖</div>
+                <div class="step-name">AI预处理</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <div class="step-icon">🎯</div>
+                <div class="step-name">姿态估计</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <div class="step-icon">📐</div>
+                <div class="step-name">3D重建</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <div class="step-icon">🧍</div>
+                <div class="step-name">模型拟合</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <div class="step-icon">🎬</div>
+                <div class="step-name">视觉合成</div>
+            </div>
+        </div>
+        
+        <!-- 性能指标 -->
+        <h2 class="section-title">📈 性能指标</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">10x</div>
+                <div class="metric-label">效率提升</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">95%</div>
+                <div class="metric-label">姿态精度</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">30%</div>
+                <div class="metric-label">成本降低</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">90%</div>
+                <div class="metric-label">遮挡处理成功率</div>
+            </div>
+        </div>
+        
+        <!-- 大模型能力矩阵 -->
+        <h2 class="section-title">🤖 大模型能力矩阵</h2>
+        <div class="llm-matrix">
+            <div class="llm-card">
+                <h4>🧠 大语言模型 (LLM)</h4>
+                <ul>
+                    <li>
+                        <span>智能交互</span>
+                        <span class="tech-tag">GPT-4</span>
+                    </li>
+                    <li>
+                        <span>参数生成</span>
+                        <span class="tech-tag">Claude</span>
+                    </li>
+                    <li>
+                        <span>错误诊断</span>
+                        <span class="tech-tag">LLaMA</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="llm-card">
+                <h4>👁️ 视觉大模型 (VLM)</h4>
+                <ul>
+                    <li>
+                        <span>图像分割</span>
+                        <span class="tech-tag">SAM</span>
+                    </li>
+                    <li>
+                        <span>姿态控制</span>
+                        <span class="tech-tag">ControlNet</span>
+                    </li>
+                    <li>
+                        <span>目标检测</span>
+                        <span class="tech-tag">Grounding DINO</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="llm-card">
+                <h4>🎬 生成式大模型</h4>
+                <ul>
+                    <li>
+                        <span>视角合成</span>
+                        <span class="tech-tag">Neural Body</span>
+                    </li>
+                    <li>
+                        <span>图像生成</span>
+                        <span class="tech-tag">Stable Diffusion</span>
+                    </li>
+                    <li>
+                        <span>视频生成</span>
+                        <span class="tech-tag">AIGC</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="llm-card">
+                <h4>🔗 多模态大模型</h4>
+                <ul>
+                    <li>
+                        <span>视频理解</span>
+                        <span class="tech-tag">GPT-4V</span>
+                    </li>
+                    <li>
+                        <span>跨模态生成</span>
+                        <span class="tech-tag">LLaVA</span>
+                    </li>
+                    <li>
+                        <span>场景解析</span>
+                        <span class="tech-tag">CLIP</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 功能演示 -->
+        <h2 class="section-title">🎥 功能演示</h2>
+        <div class="demo-grid">
+            <div class="demo-card">
+                <div class="demo-preview">🕺</div>
+                <div class="demo-info">
+                    <h3>多视角单人动作捕捉</h3>
+                    <p>基于SMPL/SMPL-X模型的多人动作捕捉，支持身体+手部+面部姿态估计，实现高精度3D人体重建</p>
+                </div>
+            </div>
+            
+            <div class="demo-card">
+                <div class="demo-preview">🌐</div>
+                <div class="demo-info">
+                    <h3>互联网视频处理</h3>
+                    <p>支持从任意互联网视频进行动作捕捉，无需专业设备，大模型理解任意视频内容</p>
+                </div>
+            </div>
+            
+            <div class="demo-card">
+                <div class="demo-preview">🪞</div>
+                <div class="demo-info">
+                    <h3>镜面场景增强</h3>
+                    <p>利用镜子反射信息，实现单相机多人动作捕捉，AI镜面反射增强技术</p>
+                </div>
+            </div>
+            
+            <div class="demo-card">
+                <div class="demo-preview">👥</div>
+                <div class="demo-info">
+                    <h3>多人动作捕捉</h3>
+                    <p>支持多视角多人同时动作捕捉与跟踪，智能多人场景处理</p>
+                </div>
+            </div>
+            
+            <div class="demo-card">
+                <div class="demo-preview">🎬</div>
+                <div class="demo-info">
+                    <h3>新视角合成</h3>
+                    <p>基于Neural Body技术，生成自由视角视频，大模型优化神经辐射场</p>
+                </div>
+            </div>
+            
+            <div class="demo-card">
+                <div class="demo-preview">🤖</div>
+                <div class="demo-info">
+                    <h3>AI智能交互</h3>
+                    <p>自然语言操作系统，零门槛使用专业级动作捕捉，AI助手实时响应</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 技术栈 -->
+        <h2 class="section-title">🛠️ 技术栈</h2>
+        <div class="tech-table-container">
+            <table class="tech-table">
+                <thead>
+                    <tr>
+                        <th>技术</th>
+                        <th>版本</th>
+                        <th>用途</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Python</td>
+                        <td class="version">3.10+</td>
+                        <td>核心开发语言</td>
+                    </tr>
+                    <tr>
+                        <td>PyTorch</td>
+                        <td class="version">2.1+</td>
+                        <td>深度学习框架</td>
+                    </tr>
+                    <tr>
+                        <td>CUDA</td>
+                        <td class="version">12.1+</td>
+                        <td>GPU计算加速</td>
+                    </tr>
+                    <tr>
+                        <td>FastAPI</td>
+                        <td class="version">0.100+</td>
+                        <td>Python API框架</td>
+                    </tr>
+                    <tr>
+                        <td>Spring Boot</td>
+                        <td class="version">2.7+</td>
+                        <td>Java业务服务</td>
+                    </tr>
+                    <tr>
+                        <td>Vue.js</td>
+                        <td class="version">3.3+</td>
+                        <td>前端框架</td>
+                    </tr>
+                    <tr>
+                        <td>Three.js</td>
+                        <td class="version">Latest</td>
+                        <td>3D可视化</td>
+                    </tr>
+                    <tr>
+                        <td>MySQL</td>
+                        <td class="version">8.0+</td>
+                        <td>关系型数据库</td>
+                    </tr>
+                    <tr>
+                        <td>Redis</td>
+                        <td class="version">7.0+</td>
+                        <td>缓存服务</td>
+                    </tr>
+                    <tr>
+                        <td>Milvus</td>
+                        <td class="version">2.3+</td>
+                        <td>向量数据库</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="company">致业电子 ZECN</div>
+            <p>致力于人工智能与计算机视觉技术的创新与应用</p>
+            <p style="margin-top: 20px; font-size: 14px;">版权所有 © 2024 致业电子. 保留所有权利.</p>
+        </footer>
+    </div>
+    
+    <script>
+        // 简单的滚动动画
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        document.querySelectorAll('.capability-card, .llm-card, .demo-card, .metric-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+        
+        // 数字动画
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value + (element.dataset.suffix || '');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // 当指标卡片进入视口时触发动画
+        const metricsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const valueEl = entry.target.querySelector('.metric-value');
+                    const text = valueEl.textContent;
+                    const num = parseInt(text);
+                    const suffix = text.replace(/[0-9]/g, '');
+                    valueEl.dataset.suffix = suffix;
+                    animateValue(valueEl, 0, num, 1500);
+                    metricsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        document.querySelectorAll('.metric-card').forEach(el => {
+            metricsObserver.observe(el);
+        });
+    </script>
+</body>
+</html>
