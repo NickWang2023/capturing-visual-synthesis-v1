@@ -117,3 +117,6 @@ lightning_logs
 models
 yolov5m.pt
 debug/
+
+# 备份文件
+*.bak

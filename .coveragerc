@@ -1,0 +1,48 @@
+# 测试覆盖率配置
+# Issue #8: 单元测试覆盖
+
+[run]
+# 源代码目录
+source = easymocap
+
+# 排除的目录
+omit = 
+    */tests/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */setup.py
+    */conf.py
+
+[report]
+# 排除的行
+exclude_lines =
+    # 不需要覆盖的行
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    pass
+    except ImportError
+    except Exception
+    
+    # 不需要覆盖的类型检查
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+
+# 显示缺失的行
+show_missing = true
+
+# 精度
+precision = 2
+
+# 最小覆盖率（失败阈值）
+fail_under = 80
+
+[html]
+# HTML报告目录
+directory = htmlcov
+
+[xml]
+# XML报告文件
+output = coverage.xml

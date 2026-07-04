@@ -1,7 +1,7 @@
 '''
   @ Date: 2026-07-03
   @ Author: 明哥升级版
-  @ Description: 大模型服务模块 - LLM集成
+  @ Description: LLM服务模块 - 大模型集成（修复版）
 '''
 import os
 import json
@@ -10,11 +10,17 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
 
-import openai
-from openai import OpenAI
-
 # 配置日志
 logger = logging.getLogger(__name__)
+
+# 可选导入openai
+try:
+    import openai
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    logger.warning("openai库未安装，LLM功能将不可用。请运行: pip install openai")
 
 
 class TaskComplexityLevel(Enum):
@@ -78,6 +84,9 @@ class LLMService:
         Args:
             config: LLM配置，如果不提供则从环境变量加载
         """
+        if not OPENAI_AVAILABLE:
+            raise ImportError("openai库未安装，请运行: pip install openai")
+        
         self.config = config or LLMConfig.from_env()
         self.client = OpenAI(
             api_key=self.config.api_key,
@@ -92,11 +101,6 @@ class LLMService:
         
         Args:
             video_info: 视频信息字典
-                - duration: 视频时长（秒）
-                - resolution: 分辨率（如 "1920x1080"）
-                - fps: 帧率
-                - person_count: 人物数量
-                - scene_type: 场景类型（indoor/outdoor）
         
         Returns:
             TaskComplexity对象
@@ -140,7 +144,6 @@ class LLMService:
             
         except json.JSONDecodeError as e:
             logger.error(f"LLM返回的JSON解析失败: {e}")
-            # 返回默认值
             return TaskComplexity(
                 level=TaskComplexityLevel.MEDIUM,
                 estimated_time=300,
@@ -154,25 +157,12 @@ class LLMService:
     def generate_parameters(self, task_type: str, video_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         使用LLM自动生成处理参数
-        
-        Args:
-            task_type: 任务类型（如 "mv1p", "mirror", "internet"）
-            video_info: 视频信息
-        
-        Returns:
-            生成的参数配置
         """
         prompt = f"""为{task_type}任务生成最优处理参数：
 
 视频信息：{json.dumps(video_info, ensure_ascii=False, indent=2)}
 
-请生成JSON格式的参数配置，包括：
-1. 检测参数（置信度阈值、NMS阈值等）
-2. 优化参数（学习率、迭代次数等）
-3. 渲染参数（分辨率、质量等）
-4. 性能参数（batch size、workers等）
-
-只返回JSON格式的配置。"""
+请生成JSON格式的参数配置。"""
         
         try:
             response = self.client.chat.completions.create(
@@ -194,12 +184,6 @@ class LLMService:
     def diagnose_error(self, error_log: str) -> Dict[str, str]:
         """
         使用LLM诊断错误并提供修复建议
-        
-        Args:
-            error_log: 错误日志
-        
-        Returns:
-            诊断结果字典
         """
         prompt = f"""分析以下错误日志并提供修复建议：
 
@@ -235,13 +219,6 @@ class LLMService:
     def chat(self, user_message: str, history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         智能对话接口
-        
-        Args:
-            user_message: 用户消息
-            history: 对话历史
-        
-        Returns:
-            AI回复
         """
         system_prompt = """你是大模型支持下的动作捕捉与视觉合成系统的AI助手。
 

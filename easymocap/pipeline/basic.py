@@ -1,7 +1,7 @@
 '''
   @ Date: 2026-07-03
   @ Author: 明哥升级版
-  @ Description: 升级后的 pipeline/basic.py - 添加类型注解和错误处理
+  @ Description: 升级后的 pipeline/basic.py - 添加类型注解、错误处理和大模型集成
 '''
 from typing import Optional, Dict, Any, Tuple
 import numpy as np
@@ -12,9 +12,33 @@ from ..mytools import Timer
 from ..dataset import CONFIG
 from .weight import load_weight_pose, load_weight_shape
 from .config import Config
+from ..logging_config import setup_logging, get_logger
 
 # 配置日志
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
+
+# 可选导入LLM和VLM模块
+try:
+    from ..llm import LLMService, get_llm_service
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
+    logger.debug("LLM模块不可用")
+
+try:
+    from ..vlm import VLMService, get_vlm_service
+    VLM_AVAILABLE = True
+except ImportError:
+    VLM_AVAILABLE = False
+    logger.debug("VLM模块不可用")
+
+try:
+    from ..performance import PerformanceOptimizer, CacheManager
+    PERFORMANCE_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_AVAILABLE = False
+    logger.debug("性能优化模块不可用")
 
 
 def multi_stage_optimize(
