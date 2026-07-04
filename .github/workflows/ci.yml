@@ -1,27 +1,17 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
-    name: Build Check
+  check:
     runs-on: ubuntu-latest
-    continue-on-error: true
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    
-    - name: Verify
-      run: |
-        python --version
-        echo "OK"
+    - run: python --version
