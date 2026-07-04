@@ -1,0 +1,73 @@
+# 大模型支持下的动作捕捉与视觉合成系统 V1.0
+# GPU版本Dockerfile
+
+# ==================== 基础镜像 ====================
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+
+# 设置非交互模式
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3.10-venv \
+    python3-pip \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    ffmpeg \
+    git \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置Python3.10为默认
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+
+# 升级pip
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# 创建应用目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 安装PyTorch (CUDA版本)
+RUN pip install --no-cache-dir \
+    torch==2.1.0+cu121 \
+    torchvision==0.16.0+cu121 \
+    torchaudio==2.1.0+cu121 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# 复制应用代码
+COPY . .
+
+# 创建必要目录
+RUN mkdir -p /app/logs /app/data /app/output /app/models
+
+# 设置权限
+RUN chmod +x /app/scripts/*.sh 2>/dev/null || true
+
+# 设置环境变量
+ENV PYTHONPATH=/app
+ENV CUDA_VISIBLE_DEVICES=0
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# 暴露端口
+EXPOSE 8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 启动命令
+CMD ["python", "-m", "uvicorn", "apps.mocap.service:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

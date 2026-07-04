@@ -1,0 +1,180 @@
+# 大模型支持下的动作捕捉与视觉合成系统 V1.0
+# Docker Compose 配置文件
+
+version: '3.8'
+
+services:
+  # ==================== 应用服务 ====================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - CUDA_VERSION=12.1.0
+        - PYTHON_VERSION=3.10
+    container_name: mocap-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=mocap_db
+      - DB_USERNAME=mocap_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID}
+      - OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET}
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - mocap-network
+
+  # ==================== GPU AI服务 ====================
+  gpu-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      args:
+        - CUDA_VERSION=12.1.0
+        - PYTHON_VERSION=3.10
+    container_name: mocap-gpu
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+      - MOCAP_CONFIG=/app/config/model_paths.yml
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./logs:/app/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - mocap-network
+
+  # ==================== 数据库 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: mocap-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=mocap_db
+      - MYSQL_USER=mocap_user
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - mocap-network
+
+  # ==================== 缓存 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: mocap-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - mocap-network
+
+  # ==================== 向量数据库 ====================
+  milvus:
+    image: milvusdb/milvus:v2.3.0
+    container_name: mocap-milvus
+    restart: unless-stopped
+    ports:
+      - "19530:19530"
+    environment:
+      - ETCD_USE_EMBED=true
+      - COMMON_STORAGETYPE=local
+    volumes:
+      - milvus-data:/var/lib/milvus
+    networks:
+      - mocap-network
+
+  # ==================== Nginx反向代理 ====================
+  nginx:
+    image: nginx:alpine
+    container_name: mocap-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./dist:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+      - gpu-service
+    networks:
+      - mocap-network
+
+  # ==================== 监控 ====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mocap-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - mocap-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mocap-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - mocap-network
+
+# ==================== 网络 ====================
+networks:
+  mocap-network:
+    driver: bridge
+
+# ==================== 数据卷 ====================
+volumes:
+  mysql-data:
+  redis-data:
+  milvus-data:
+  prometheus-data:
+  grafana-data:
