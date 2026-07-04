@@ -9,9 +9,20 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-# 读取 requirements
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+# 核心依赖（避免读取requirements.txt导致的CI问题）
+core_requirements = [
+    'numpy>=1.24.0',
+    'scipy>=1.11.0',
+    'opencv-python>=4.8.0',
+    'torch>=2.1.0',
+    'torchvision>=0.16.0',
+    'tqdm>=4.66.0',
+    'pyyaml>=6.0.1',
+    'yacs>=0.1.8',
+    'tabulate>=0.9.0',
+    'termcolor>=2.3.0',
+    'setuptools>=69.0.0',
+]
 
 setup(
     name='easymocap',
@@ -24,7 +35,7 @@ setup(
     url='https://github.com/zju3dv/EasyMocap',
     packages=find_packages(exclude=['tests', 'tests.*']),
     python_requires='>=3.10',
-    install_requires=requirements,
+    install_requires=core_requirements,
     extras_require={
         'dev': [
             'pytest>=7.4.0',
