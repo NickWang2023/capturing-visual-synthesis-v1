@@ -5,9 +5,12 @@
 '''
 from setuptools import setup, find_packages
 
-# 读取 README
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+# 读取 README（如果存在）
+try:
+    with open("README.md", "r", encoding="utf-8") as fh:
+        long_description = fh.read()
+except FileNotFoundError:
+    long_description = "大模型支持下的动作捕捉与视觉合成系统 V1.0"
 
 # 核心依赖（避免读取requirements.txt导致的CI问题）
 core_requirements = [
