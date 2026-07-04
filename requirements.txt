@@ -83,3 +83,7 @@ opentelemetry-instrumentation-fastapi>=0.41b0
 opentelemetry-instrumentation-sqlalchemy>=0.41b0
 opentelemetry-instrumentation-redis>=0.41b0
 opentelemetry-exporter-otlp>=1.20.0
+
+# ==================== 认证依赖 ====================
+PyJWT>=2.8.0
+cryptography>=41.0.0

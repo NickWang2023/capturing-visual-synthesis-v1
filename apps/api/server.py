@@ -257,7 +257,7 @@ from datetime import datetime, timedelta
 security = HTTPBearer()
 
 # JWT配置
-SECRET_KEY = ***'SECRET_KEY', 'your-secret-key-change-in-production')
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
 JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
 
